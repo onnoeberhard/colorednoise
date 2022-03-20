@@ -2,10 +2,9 @@
 
 import numpy as np
 from numpy.fft import irfft, rfftfreq
-from numpy.random import normal
 
 
-def powerlaw_psd_gaussian(exponent, size, fmin=0):
+def powerlaw_psd_gaussian(exponent, size, fmin=0, rng=None):
     """Gaussian (1/f)**beta noise.
 
     Based on the algorithm in:
@@ -44,6 +43,10 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0):
         since 1/samples is the lowest possible finite frequency in the
         sample. The largest possible value is fmin = 0.5, the Nyquist
         frequency. The output for this value is white noise.
+
+    rng : np.random.Generator, optional
+        Random number generator (for reproducibility). If None (default), a new
+        random number generator is created by calling np.random.default_rng().
 
 
     Returns
@@ -100,8 +103,10 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0):
     s_scale = s_scale[(None,) * dims_to_add + (Ellipsis,)]
 
     # Generate scaled random power + phase
-    sr = normal(scale=s_scale, size=size)
-    si = normal(scale=s_scale, size=size)
+    if rng is None:
+        rng = np.random.default_rng()
+    sr = rng.normal(scale=s_scale, size=size)
+    si = rng.normal(scale=s_scale, size=size)
 
     # If the signal length is even, frequencies +/- 0.5 are equal
     # so the coefficient must be real.
