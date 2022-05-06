@@ -46,8 +46,8 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0, random_state=None):
         sample. The largest possible value is fmin = 0.5, the Nyquist
         frequency. The output for this value is white noise.
 
-    random_state : int, numpy.integer, numpy.random.Generator,
-                   numpy.random.RandomState, optional
+    random_state :	int, numpy.integer, numpy.random.Generator, numpy.random.RandomState, 
+    				optional
         Optionally sets the state of NumPy's underlying random number generator.
         Integer-compatible values or None are passed to np.random.default_rng.
         np.random.RandomState or np.random.Generator are used directly.
@@ -62,7 +62,7 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0, random_state=None):
     Examples:
     ---------
 
-    >>> # generate 1/f noise == pink noise == flicker noise
+    # generate 1/f noise == pink noise == flicker noise
     >>> import colorednoise as cn
     >>> y = cn.powerlaw_psd_gaussian(1, 5)
     """
@@ -82,20 +82,20 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0, random_state=None):
 
     # Validate / normalise fmin
     if 0 <= fmin <= 0.5:
-        fmin = max(fmin, 1./samples)    # Low frequency cutoff
+        fmin = max(fmin, 1./samples) # Low frequency cutoff
     else:
         raise ValueError("fmin must be chosen between 0 and 0.5.")
 
     # Build scaling factors for all frequencies
     s_scale = f
-    ix = npsum(s_scale < fmin)   # Index of the cutoff
+    ix   = npsum(s_scale < fmin)   # Index of the cutoff
     if ix and ix < len(s_scale):
         s_scale[:ix] = s_scale[ix]
     s_scale = s_scale**(-exponent/2.)
 
     # Calculate theoretical output standard deviation from scaling
-    w = s_scale[1:].copy()
-    w[-1] *= (1 + (samples % 2)) / 2.    # correct f = +-0.5
+    w      = s_scale[1:].copy()
+    w[-1] *= (1 + (samples % 2)) / 2. # correct f = +-0.5
     sigma = 2 * sqrt(npsum(w**2)) / samples
 
     # Adjust size to generate one Fourier component per frequency
@@ -104,7 +104,7 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0, random_state=None):
     # Add empty dimension(s) to broadcast s_scale along last
     # dimension of generated random power + phase (below)
     dims_to_add = len(size) - 1
-    s_scale = s_scale[(newaxis,) * dims_to_add + (Ellipsis,)]
+    s_scale     = s_scale[(newaxis,) * dims_to_add + (Ellipsis,)]
 
     # prepare random number generator
     normal_dist = _get_normal_distribution(random_state)
@@ -124,7 +124,7 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0, random_state=None):
     sr[..., 0] *= sqrt(2)    # Fix magnitude
 
     # Combine power + corrected phase to Fourier components
-    s = sr + 1J * si
+    s  = sr + 1J * si
 
     # Transform to real time series & scale to unit variance
     y = irfft(s, n=samples, axis=-1) / sigma
