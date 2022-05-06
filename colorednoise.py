@@ -37,8 +37,8 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0, random_state=None):
 
     fmin : float, optional
         Low-frequency cutoff.
-        Default: 0 corresponds to original paper. 
-        
+        Default: 0 corresponds to original paper.
+
         The power-spectrum below fmin is flat. fmin is defined relative
         to a unit sampling rate (see numpy's rfftfreq). For convenience,
         the passed value is mapped to max(fmin, 1/samples) internally
@@ -48,10 +48,10 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0, random_state=None):
 
     random_state :	int, numpy.integer, numpy.random.Generator, numpy.random.RandomState, 
     				optional
-		Optionally sets the state of NumPy's underlying random number generator.
-		Integer-compatible values or None are passed to np.random.default_rng.
-		np.random.RandomState or np.random.Generator are used directly.
-		Default: None.
+        Optionally sets the state of NumPy's underlying random number generator.
+        Integer-compatible values or None are passed to np.random.default_rng.
+        np.random.RandomState or np.random.Generator are used directly.
+        Default: None.
 
     Returns
     -------
@@ -66,38 +66,38 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0, random_state=None):
     >>> import colorednoise as cn
     >>> y = cn.powerlaw_psd_gaussian(1, 5)
     """
-    
+
     # Make sure size is a list so we can iterate it and assign to it.
     try:
         size = list(size)
     except TypeError:
         size = [size]
-    
+
     # The number of samples in each time series
     samples = size[-1]
-    
+
     # Calculate Frequencies (we asume a sample rate of one)
     # Use fft functions for real output (-> hermitian spectrum)
     f = rfftfreq(samples)
-    
+
     # Validate / normalise fmin
     if 0 <= fmin <= 0.5:
         fmin = max(fmin, 1./samples) # Low frequency cutoff
     else:
         raise ValueError("fmin must be chosen between 0 and 0.5.")
-    
+
     # Build scaling factors for all frequencies
-    s_scale = f    
+    s_scale = f
     ix   = npsum(s_scale < fmin)   # Index of the cutoff
     if ix and ix < len(s_scale):
         s_scale[:ix] = s_scale[ix]
     s_scale = s_scale**(-exponent/2.)
-    
+
     # Calculate theoretical output standard deviation from scaling
     w      = s_scale[1:].copy()
     w[-1] *= (1 + (samples % 2)) / 2. # correct f = +-0.5
     sigma = 2 * sqrt(npsum(w**2)) / samples
-    
+
     # Adjust size to generate one Fourier component per frequency
     size[-1] = len(f)
 
@@ -105,27 +105,30 @@ def powerlaw_psd_gaussian(exponent, size, fmin=0, random_state=None):
     # dimension of generated random power + phase (below)
     dims_to_add = len(size) - 1
     s_scale     = s_scale[(newaxis,) * dims_to_add + (Ellipsis,)]
-    
+
     # prepare random number generator
     normal_dist = _get_normal_distribution(random_state)
 
     # Generate scaled random power + phase
     sr = normal_dist(scale=s_scale, size=size)
     si = normal_dist(scale=s_scale, size=size)
-    
+
     # If the signal length is even, frequencies +/- 0.5 are equal
     # so the coefficient must be real.
-    if not (samples % 2): si[...,-1] = 0
+    if not (samples % 2):
+        si[..., -1] = 0
+        sr[..., -1] *= sqrt(2)    # Fix magnitude
     
     # Regardless of signal length, the DC component must be real
-    si[...,0] = 0
-    
+    si[..., 0] = 0
+    sr[..., 0] *= sqrt(2)    # Fix magnitude
+
     # Combine power + corrected phase to Fourier components
     s  = sr + 1J * si
-    
+
     # Transform to real time series & scale to unit variance
     y = irfft(s, n=samples, axis=-1) / sigma
-    
+
     return y
 
 
@@ -138,7 +141,7 @@ def _get_normal_distribution(random_state):
         normal_dist = random_state.normal
     else:
         raise ValueError(
-        	"random_state must be one of integer, numpy.random.Generator, "
-        	"numpy.random.Randomstate"
+            "random_state must be one of integer, numpy.random.Generator, "
+            "numpy.random.Randomstate"
         )
     return normal_dist
